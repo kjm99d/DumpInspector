@@ -1,0 +1,6 @@
+@DumpInspector.Server_HostAddress = http://localhost:5116
+
+GET {{DumpInspector.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

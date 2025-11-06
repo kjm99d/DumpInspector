@@ -1,0 +1,22 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  :root{--accent:#1565c0;--muted:#666}
+  body{font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;padding:0;background:#f7f9fc;color:#111}
+  .app{max-width:980px;margin:24px auto;padding:12px}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  header h1{margin:0;color:var(--accent)}
+  nav button{margin-right:8px;padding:6px 10px;border:1px solid #ddd;background:#fff;border-radius:4px;cursor:pointer}
+  nav button:hover{background:#f0f6ff}
+  .user{font-size:0.9rem;color:var(--muted)}
+  main{background:#fff;border:1px solid #eceff4;padding:16px;border-radius:6px}
+  section{margin-bottom:12px}
+  input,textarea{display:block;width:100%;padding:8px;margin:8px 0;border:1px solid #ddd;border-radius:4px;font-size:0.95rem}
+  .row{display:flex;gap:8px}
+  button{cursor:pointer}
+  .hint{color:var(--muted);font-size:0.9rem}
+  .message{margin-top:12px;padding:10px;border-radius:6px;background:#fff8e1;border:1px solid #ffe082}
+  ul{list-style:none;padding-left:0}
+  li{padding:6px 0;border-bottom:1px dashed #eee}
+  color: #888;
+}

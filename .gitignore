@@ -1,0 +1,29 @@
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# IDE / tooling
+.vs/
+*.user
+*.suo
+*.sw?
+
+# Build outputs
+bin/
+obj/
+DumpInspector.Server/bin/
+DumpInspector.Server/obj/
+dumpinspector.client/obj/
+dumpinspector.client/dist/
+
+# Dependencies
+dumpinspector.client/node_modules/
+
+# Logs & temporary
+logs/
+*.log
+*.tmp
+
+# Coverage / reports
+coverage/
+*.lcov
