@@ -81,3 +81,21 @@ export async function adminDeleteUser(username) {
 export async function adminGetLogs(take = 100) {
   return request(`/admin/logs?take=${encodeURIComponent(take)}`)
 }
+
+export async function uploadPdb(file, { productName, version, comment, uploadedBy } = {}) {
+  if (!file) throw new Error('업로드할 PDB 파일을 선택하세요.')
+  const fd = new FormData()
+  fd.append('file', file)
+  if (productName) fd.append('productName', productName)
+  if (version) fd.append('version', version)
+  if (comment) fd.append('comment', comment)
+  if (uploadedBy) fd.append('uploadedBy', uploadedBy)
+  return request('/pdb/upload', {
+    method: 'POST',
+    body: fd
+  })
+}
+
+export async function adminUploadPdb(file, options = {}) {
+  return uploadPdb(file, options)
+}

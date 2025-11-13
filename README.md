@@ -20,6 +20,10 @@ DumpInspector는 윈도우 크래시 덤프(.dmp)를 업로드하면 서버에�
   - `/ws/analysis?id=...` WebSocket으로 cdb 출력이 흐름
   - 완료 시 상세 리포트가 클립보드 복사 버튼과 함께 표시됨
 
+- **PDB 업로드 & SymStore 연동**
+  - 상단 탭의 **Upload PDB** 화면이나 관리자 패널 카드에서 `.pdb` 파일을 업로드하면 `symstore.exe`가 자동으로 실행되어 지정한 심볼 스토어 경로로 저장
+  - 심볼 스토어 경로/제품명/`symstore.exe` 경로는 CrashDumpSettings 옵션에서 관리하며, `Symbol Path`에 포함하면 cdb가 즉시 활용
+
 - **관리자 대시보드**
   - 사용자 생성 (아이디/이메일, 임시 비밀번호 자동 발급 & 이메일 전송)
   - 사용자 목록/삭제(관리자는 삭제 불가), 임시 비밀번호 재발급
@@ -78,10 +82,13 @@ DumpInspector는 윈도우 크래시 덤프(.dmp)를 업로드하면 서버에�
 | SMTP 설정 | 호스트/포트/SSL/계정/From 주소 (임시 비밀번호 전송) |
 | CDB Path | WinDbg `cdb.exe` 경로 (미지정 시 기본 설치 경로 탐색) |
 | Symbol Path | `_NT_SYMBOL_PATH` (예: `srv*C:\symbols*https://msdl.microsoft.com/download/symbols`) |
+| SymStore Path | `symstore.exe` 절대 경로 (미지정 시 Windows Kits 기본 경로 탐색) |
+| Symbol Store Root | SymStore 저장 루트 (예: `C:\symbols`) |
+| Symbol Store Product | SymStore `/t` 옵션에 사용할 제품명 |
 | Analysis Timeout | 분석 최대 시간(초) |
 | NAS 설정 | PDB를 NAS에서 제공할 경우 사용 |
 
-옵션은 `appsettings.json`과 DB에 저장되며, 새로고침 후에도 즉시 반영됩니다.
+옵션은 DB(`Options` 테이블)에 저장되며, SMTP·심볼 경로 등의 런타임 서비스가 매 요청마다 이 값을 읽기 때문에 서버를 재시작하지 않아도 즉시 반영됩니다. `appsettings.json`은 초기 기본값을 공급하는 용도로만 사용됩니다.
 
 ---
 
@@ -93,15 +100,41 @@ DumpInspector는 윈도우 크래시 덤프(.dmp)를 업로드하면 서버에�
    - 분석 종료 후 상세 리포트를 확인하고 복사 버튼으로 클립보드 저장
    - 관리자 패널의 업로드 기록에서 결과 재확인 가능
 
-2. **사용자 관리**
+2. **PDB 업로드 & 심볼 스토어 등록**
+   - 상단 탭에서 `Upload PDB`를 선택하거나 관리자 패널 → `PDB 업로드` 카드에서 `.pdb` 파일을 올립니다.
+   - 필요 시 제품명/버전/코멘트를 입력하고 업로드 버튼을 누르면 서버가 `symstore.exe add`를 실행
+   - 완료 후 저장 경로·명령·symstore 출력 로그를 즉시 확인하고, `Symbol Path`에 해당 루트를 포함시켜 WinDbg에서 활용
+
+3. **사용자 관리**
    - 관리자 패널 → 사용자 생성: 아이디 & 이메일 입력 → 생성
    - 임시 비밀번호가 이메일로 전송됨 (SMTP 정상 구성 필요)
    - 사용자 삭제/임시 비밀번호 재발급 가능 (관리자 계정은 삭제 불가)
 
-3. **SMTP 구성 예시 (네이버)**
+4. **SMTP 구성 예시 (네이버)**
    - `smtp.naver.com`, 포트 `587`, SSL 사용
    - `Username` 및 `FromAddress`: 전체 이메일 주소
    - 앱 비밀번호 또는 계정 비밀번호 사용, 네이버 메일에서 SMTP 사용 활성화 필수
+
+---
+
+## 심볼 서버 호스팅 (Nginx 예시)
+
+`symstore.exe`가 만든 폴더(`CrashDumpSettings:SymbolStoreRoot`)를 HTTP/파일 서비스로 그대로 노출하면 WinDbg가 `srv*https://your-host/symbols` 형식으로 심볼을 다운로드할 수 있습니다. 별도 API가 필요하지 않으며, 정적 파일을 서빙할 수 있는 Nginx/IIS/CDN이면 충분합니다.
+
+```
+server {
+    listen 80;
+    server_name symbols.example.com;
+
+    location /symbols/ {
+        alias /mnt/symstore/;   # SymbolStoreRoot와 동일한 경로
+        autoindex off;
+        add_header Cache-Control "public, max-age=31536000";
+    }
+}
+```
+
+위 구성을 적용하고 `_NT_SYMBOL_PATH`에 `srv*https://symbols.example.com/symbols*https://msdl.microsoft.com/download/symbols`를 추가하면 됩니다. Windows에서도 nginx 공식 배포판을 그대로 사용할 수 있습니다.
 
 ---
 

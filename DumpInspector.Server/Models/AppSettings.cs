@@ -16,6 +16,9 @@ namespace DumpInspector.Server.Models
         public SmtpSettings? Smtp { get; set; }
         public string? CdbPath { get; set; }
         public string? SymbolPath { get; set; }
+        public string? SymStorePath { get; set; }
+        public string SymbolStoreRoot { get; set; } = "Symbols";
+        public string SymbolStoreProduct { get; set; } = "DumpInspector";
         public int AnalysisTimeoutSeconds { get; set; } = 120;
         public string? AdminSecret { get; set; }
         public string? InitialAdminPassword { get; set; }

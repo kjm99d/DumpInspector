@@ -17,6 +17,9 @@ export default function OptionsEditor({ loadOptions, saveOptions, setMessage, em
   const [smtpFrom, setSmtpFrom] = useState('')
   const [cdbPath, setCdbPath] = useState('')
   const [symbolPath, setSymbolPath] = useState('')
+  const [symStorePath, setSymStorePath] = useState('')
+  const [symbolStoreRoot, setSymbolStoreRoot] = useState('Symbols')
+  const [symbolStoreProduct, setSymbolStoreProduct] = useState('DumpInspector')
   const [analysisTimeout, setAnalysisTimeout] = useState('120')
 
   useEffect(() => {
@@ -55,6 +58,9 @@ export default function OptionsEditor({ loadOptions, saveOptions, setMessage, em
           setSmtpFrom(smtp.FromAddress ?? smtp.fromAddress ?? '')
           setCdbPath(opt.CdbPath ?? opt.cdbPath ?? '')
           setSymbolPath(opt.SymbolPath ?? opt.symbolPath ?? '')
+          setSymStorePath(opt.SymStorePath ?? opt.symStorePath ?? '')
+          setSymbolStoreRoot(opt.SymbolStoreRoot ?? opt.symbolStoreRoot ?? 'Symbols')
+          setSymbolStoreProduct(opt.SymbolStoreProduct ?? opt.symbolStoreProduct ?? 'DumpInspector')
           setAnalysisTimeout(String(parseInt(opt.AnalysisTimeoutSeconds ?? opt.analysisTimeoutSeconds ?? 120, 10) || 120))
         }
         setLoaded(true)
@@ -93,6 +99,9 @@ export default function OptionsEditor({ loadOptions, saveOptions, setMessage, em
         },
         CdbPath: cdbPath,
         SymbolPath: symbolPath,
+        SymStorePath: symStorePath,
+        SymbolStoreRoot: symbolStoreRoot,
+        SymbolStoreProduct: symbolStoreProduct,
         AnalysisTimeoutSeconds: Number(analysisTimeout) || 120
       }
       await saveOptions(obj)
@@ -160,6 +169,27 @@ export default function OptionsEditor({ loadOptions, saveOptions, setMessage, em
 
       <label>Symbol Path (optional)</label>
       <input value={symbolPath} onChange={e => setSymbolPath(e.target.value)} placeholder="예: srv*C:\\symbols*https://msdl.microsoft.com/download/symbols" />
+
+      <label>SymStore Path (optional)</label>
+      <input
+        value={symStorePath}
+        onChange={e => setSymStorePath(e.target.value)}
+        placeholder="예: C:\\Program Files (x86)\\Windows Kits\\10\\Debuggers\\x64\\symstore.exe"
+      />
+
+      <label>Symbol Store Root</label>
+      <input
+        value={symbolStoreRoot}
+        onChange={e => setSymbolStoreRoot(e.target.value)}
+        placeholder="예: C:\\symbols"
+      />
+
+      <label>Symbol Store Product Name</label>
+      <input
+        value={symbolStoreProduct}
+        onChange={e => setSymbolStoreProduct(e.target.value)}
+        placeholder="예: DumpInspector"
+      />
 
       <label>Analysis Timeout (seconds)</label>
       <input type="number" value={analysisTimeout} onChange={e => setAnalysisTimeout(e.target.value)} />

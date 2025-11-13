@@ -7,12 +7,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:5116',
         changeOrigin: true,
         secure: false,
       },
       '/ws': {
-        target: 'ws://localhost:5000',
+        target: 'ws://localhost:5116',
         ws: true,
         changeOrigin: true,
         secure: false,

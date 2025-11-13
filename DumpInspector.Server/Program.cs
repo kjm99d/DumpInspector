@@ -37,6 +37,8 @@ builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IAuthService
 builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IAdminService, DumpInspector.Server.Services.Implementations.AdminService>();
 builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IDumpStorageService, DumpInspector.Server.Services.Implementations.DumpStorageService>();
 builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IEmailSender, DumpInspector.Server.Services.Implementations.SmtpEmailSender>();
+builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.ICrashDumpSettingsProvider, DumpInspector.Server.Services.Implementations.DbCrashDumpSettingsProvider>();
+builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IPdbIngestionService, DumpInspector.Server.Services.Implementations.SymStorePdbIngestionService>();
 builder.Services.AddSingleton<DumpInspector.Server.Services.Analysis.AnalysisSessionManager>();
 // IPdbProvider will be resolved based on configuration at runtime
 builder.Services.AddHttpClient<DumpInspector.Server.Services.Implementations.NasPdbProvider>();

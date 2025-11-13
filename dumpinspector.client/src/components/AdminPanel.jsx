@@ -5,6 +5,7 @@ import {
   adminForceReset,
   adminDeleteUser,
   adminGetLogs,
+  adminUploadPdb,
   getOptions,
   saveOptions
 } from '../api'
@@ -19,6 +20,13 @@ export default function AdminPanel({ setMessage }) {
   const [logs, setLogs] = useState([])
   const [logsLoading, setLogsLoading] = useState(false)
   const [selectedLog, setSelectedLog] = useState(null)
+  const [pdbFile, setPdbFile] = useState(null)
+  const [pdbProduct, setPdbProduct] = useState('')
+  const [pdbVersion, setPdbVersion] = useState('')
+  const [pdbComment, setPdbComment] = useState('')
+  const [pdbUploading, setPdbUploading] = useState(false)
+  const [pdbResult, setPdbResult] = useState(null)
+  const [pdbInputKey, setPdbInputKey] = useState(() => Date.now())
 
   useEffect(() => {
     refreshUsers()
@@ -103,6 +111,29 @@ export default function AdminPanel({ setMessage }) {
     }
   }
 
+  async function handlePdbUpload() {
+    if (!pdbFile) {
+      setMessage('업로드할 PDB 파일을 선택하세요.')
+      return
+    }
+    setPdbUploading(true)
+    try {
+      const res = await adminUploadPdb(pdbFile, {
+        productName: pdbProduct.trim(),
+        version: pdbVersion.trim(),
+        comment: pdbComment.trim()
+      })
+      setPdbResult(res)
+      setMessage(res.message ?? 'PDB가 심볼 스토어에 추가되었습니다.')
+      setPdbFile(null)
+      setPdbInputKey(Date.now())
+    } catch (e) {
+      setMessage(e.message)
+    } finally {
+      setPdbUploading(false)
+    }
+  }
+
   return (
     <section className="admin-panel">
       <h2>관리 기능</h2>
@@ -125,6 +156,47 @@ export default function AdminPanel({ setMessage }) {
             saveOptions={saveOptions}
             setMessage={setMessage}
           />
+        </div>
+        <div className="admin-card">
+          <h3>PDB 업로드</h3>
+          <input
+            key={pdbInputKey}
+            type="file"
+            accept=".pdb"
+            onChange={e => {
+              const file = e.target.files?.[0]
+              setPdbFile(file || null)
+            }}
+          />
+          <label>Product Name (미입력 시 옵션값 사용)</label>
+          <input value={pdbProduct} onChange={e => setPdbProduct(e.target.value)} placeholder="예: DumpInspector" />
+          <label>Version (선택)</label>
+          <input value={pdbVersion} onChange={e => setPdbVersion(e.target.value)} placeholder="예: 1.0.0.0" />
+          <label>Comment (선택)</label>
+          <input value={pdbComment} onChange={e => setPdbComment(e.target.value)} placeholder="예: March hotfix" />
+          <div className="row">
+            <button onClick={handlePdbUpload} disabled={pdbUploading}>
+              {pdbUploading ? '업로드 중...' : 'PDB 등록'}
+            </button>
+          </div>
+          {pdbResult && (
+            <div className="pdb-result">
+              <p>
+                <strong>Symbol Store</strong> <code>{pdbResult.symbolStoreRoot}</code>
+              </p>
+              <p>
+                <strong>Product</strong> {pdbResult.product ?? '—'}{pdbResult.version && <> / v{pdbResult.version}</>}
+              </p>
+              <p>
+                <strong>Original File</strong> {pdbResult.originalFileName}
+              </p>
+              <p>
+                <strong>Command</strong> <code>{pdbResult.symStoreCommand}</code>
+              </p>
+              <label>symstore 출력</label>
+              <pre>{pdbResult.symStoreOutput || '출력이 없습니다.'}</pre>
+            </div>
+          )}
         </div>
       </div>
 

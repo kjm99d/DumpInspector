@@ -5,6 +5,7 @@ import Dumps from './components/Dumps'
 import ChangePassword from './components/ChangePassword'
 import AdminPanel from './components/AdminPanel'
 import Home from './components/Home'
+import PdbUpload from './components/PdbUpload'
 import { isAdmin } from './api'
 
 export default function App() {
@@ -69,6 +70,7 @@ export default function App() {
   const navItems = [
     { key: 'home', label: 'Overview', visible: true, disabled: false },
     { key: 'upload', label: 'Upload', visible: Boolean(user), disabled: false },
+    { key: 'pdb', label: 'Upload PDB', visible: Boolean(user), disabled: false },
     { key: 'dumps', label: 'Dumps', visible: true, disabled: false },
     { key: 'change', label: 'Change Password', visible: Boolean(user), disabled: false },
     { key: 'admin', label: 'Admin Panel', visible: isAdminUser, disabled: false }
@@ -113,6 +115,7 @@ export default function App() {
         {message && <div className="toast in-content">{message}</div>}
         {view === 'home' && <Home isAdmin={isAdminUser} />}
         {view === 'upload' && user && <Upload username={user} setMessage={setMessage} />}
+        {view === 'pdb' && user && <PdbUpload username={user} setMessage={setMessage} />}
         {view === 'dumps' && <Dumps />}
         {view === 'change' && user && <ChangePassword username={user} setMessage={setMessage} />}
         {isAdminUser && view === 'admin' && <AdminPanel setMessage={setMessage} />}

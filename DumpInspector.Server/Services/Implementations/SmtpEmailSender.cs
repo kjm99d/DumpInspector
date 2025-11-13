@@ -1,7 +1,6 @@
 using System;
 using DumpInspector.Server.Models;
 using DumpInspector.Server.Services.Interfaces;
-using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
@@ -10,16 +9,17 @@ namespace DumpInspector.Server.Services.Implementations
 {
     public class SmtpEmailSender : IEmailSender
     {
-        private readonly CrashDumpSettings _settings;
+        private readonly ICrashDumpSettingsProvider _settingsProvider;
 
-        public SmtpEmailSender(IOptions<CrashDumpSettings> options)
+        public SmtpEmailSender(ICrashDumpSettingsProvider settingsProvider)
         {
-            _settings = options.Value;
+            _settingsProvider = settingsProvider;
         }
 
         public async Task SendAsync(string to, string subject, string body)
         {
-            var smtp = _settings.Smtp;
+            var settings = await _settingsProvider.GetAsync();
+            var smtp = settings.Smtp;
             var host = smtp?.Host?.Trim();
             var from = smtp?.FromAddress?.Trim();
             if (smtp == null || !smtp.Enabled || string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(from))
