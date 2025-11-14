@@ -196,6 +196,14 @@ export default function OptionsEditor({ loadOptions, saveOptions, setMessage, em
         placeholder="예: DumpInspector"
       />
 
+      <label>Dump Upload Limit (MB)</label>
+      <input
+        type="number"
+        min="1"
+        value={dumpUploadLimitMb}
+        onChange={e => setDumpUploadLimitMb(e.target.value)}
+      />
+
       <label>Analysis Timeout (seconds)</label>
       <input type="number" value={analysisTimeout} onChange={e => setAnalysisTimeout(e.target.value)} />
 
@@ -207,10 +215,3 @@ export default function OptionsEditor({ loadOptions, saveOptions, setMessage, em
 
   return embedded ? content : <section>{content}</section>
 }
-      <label>Dump Upload Limit (MB)</label>
-      <input
-        type="number"
-        min="1"
-        value={dumpUploadLimitMb}
-        onChange={e => setDumpUploadLimitMb(e.target.value)}
-      />
