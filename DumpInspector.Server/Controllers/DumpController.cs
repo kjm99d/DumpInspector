@@ -2,6 +2,7 @@ using DumpInspector.Server.Data;
 using DumpInspector.Server.Models;
 using DumpInspector.Server.Services.Analysis;
 using DumpInspector.Server.Services.Interfaces;
+using DumpInspector.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -20,23 +21,35 @@ namespace DumpInspector.Server.Controllers
         private readonly AnalysisSessionManager _sessionManager;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<DumpController> _logger;
+        private readonly ICrashDumpSettingsProvider _settingsProvider;
+        private const long DefaultUploadLimitBytes = 10L * 1024 * 1024 * 1024;
 
         public DumpController(
             IDumpStorageService storage,
             AnalysisSessionManager sessionManager,
             IServiceScopeFactory scopeFactory,
-            ILogger<DumpController> logger)
+            ILogger<DumpController> logger,
+            ICrashDumpSettingsProvider settingsProvider)
         {
             _storage = storage;
             _sessionManager = sessionManager;
             _scopeFactory = scopeFactory;
             _logger = logger;
+            _settingsProvider = settingsProvider;
         }
 
         [HttpPost("upload")]
         public async Task<IActionResult> Upload([FromForm] IFormFile file, [FromForm] string? uploadedBy)
         {
             if (file == null || file.Length == 0) return BadRequest("no file");
+
+            var settings = await _settingsProvider.GetAsync(HttpContext.RequestAborted);
+            var maxBytes = settings.DumpUploadMaxBytes > 0 ? settings.DumpUploadMaxBytes : DefaultUploadLimitBytes;
+            if (file.Length > maxBytes)
+            {
+                return StatusCode(StatusCodes.Status413PayloadTooLarge,
+                    $"파일 크기가 허용된 최대 용량({FormatBytes(maxBytes)})을 초과했습니다.");
+            }
 
             using var s = file.OpenReadStream();
             var saved = await _storage.SaveDumpAsync(s, file.FileName);
@@ -97,6 +110,17 @@ namespace DumpInspector.Server.Controllers
             var folder = _storage.GetDumpFolder();
             var files = Directory.GetFiles(folder).Select(p => new { Name = Path.GetFileName(p), Size = new FileInfo(p).Length });
             return Ok(files);
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            const long KB = 1024;
+            const long MB = KB * 1024;
+            const long GB = MB * 1024;
+            if (bytes >= GB) return $"{bytes / (double)GB:0.##} GB";
+            if (bytes >= MB) return $"{bytes / (double)MB:0.##} MB";
+            if (bytes >= KB) return $"{bytes / (double)KB:0.##} KB";
+            return $"{bytes} bytes";
         }
     }
 }

@@ -20,6 +20,7 @@ export default function OptionsEditor({ loadOptions, saveOptions, setMessage, em
   const [symStorePath, setSymStorePath] = useState('')
   const [symbolStoreRoot, setSymbolStoreRoot] = useState('Symbols')
   const [symbolStoreProduct, setSymbolStoreProduct] = useState('DumpInspector')
+  const [dumpUploadLimitMb, setDumpUploadLimitMb] = useState('10240')
   const [analysisTimeout, setAnalysisTimeout] = useState('120')
 
   useEffect(() => {
@@ -61,6 +62,9 @@ export default function OptionsEditor({ loadOptions, saveOptions, setMessage, em
           setSymStorePath(opt.SymStorePath ?? opt.symStorePath ?? '')
           setSymbolStoreRoot(opt.SymbolStoreRoot ?? opt.symbolStoreRoot ?? 'Symbols')
           setSymbolStoreProduct(opt.SymbolStoreProduct ?? opt.symbolStoreProduct ?? 'DumpInspector')
+          const limitBytes = Number(opt.DumpUploadMaxBytes ?? opt.dumpUploadMaxBytes ?? (10 * 1024 * 1024 * 1024))
+          const limitMb = limitBytes > 0 ? Math.round(limitBytes / (1024 * 1024)) : 10240
+          setDumpUploadLimitMb(String(limitMb))
           setAnalysisTimeout(String(parseInt(opt.AnalysisTimeoutSeconds ?? opt.analysisTimeoutSeconds ?? 120, 10) || 120))
         }
         setLoaded(true)
@@ -102,6 +106,7 @@ export default function OptionsEditor({ loadOptions, saveOptions, setMessage, em
         SymStorePath: symStorePath,
         SymbolStoreRoot: symbolStoreRoot,
         SymbolStoreProduct: symbolStoreProduct,
+        DumpUploadMaxBytes: Math.max(1, Number(dumpUploadLimitMb) || 0) * 1024 * 1024,
         AnalysisTimeoutSeconds: Number(analysisTimeout) || 120
       }
       await saveOptions(obj)
@@ -202,3 +207,10 @@ export default function OptionsEditor({ loadOptions, saveOptions, setMessage, em
 
   return embedded ? content : <section>{content}</section>
 }
+      <label>Dump Upload Limit (MB)</label>
+      <input
+        type="number"
+        min="1"
+        value={dumpUploadLimitMb}
+        onChange={e => setDumpUploadLimitMb(e.target.value)}
+      />

@@ -19,6 +19,7 @@ namespace DumpInspector.Server.Models
         public string? SymStorePath { get; set; }
         public string SymbolStoreRoot { get; set; } = "Symbols";
         public string SymbolStoreProduct { get; set; } = "DumpInspector";
+        public long DumpUploadMaxBytes { get; set; } = 10L * 1024 * 1024 * 1024;
         public int AnalysisTimeoutSeconds { get; set; } = 120;
         public string? AdminSecret { get; set; }
         public string? InitialAdminPassword { get; set; }

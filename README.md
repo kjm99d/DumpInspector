@@ -87,6 +87,7 @@ DumpInspector는 윈도우 크래시 덤프(.dmp)를 업로드하면 서버에�
 | SymStore Path | `symstore.exe` 절대 경로 (미지정 시 Windows Kits 기본 경로 탐색) |
 | Symbol Store Root | SymStore 저장 루트 (예: `C:\symbols`) |
 | Symbol Store Product | SymStore `/t` 옵션에 사용할 제품명 |
+| Dump Upload Limit (MB) | 하나의 덤프 파일이 업로드될 수 있는 최대 용량 (기본 10,240MB ≒ 10GB) |
 | Analysis Timeout | 분석 최대 시간(초) |
 | NAS 설정 | PDB를 NAS에서 제공할 경우 사용 |
 
