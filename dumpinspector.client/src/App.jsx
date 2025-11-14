@@ -40,8 +40,14 @@ export default function App() {
   }, [user])
 
   useEffect(() => {
-    if (!user) setView('home')
-  }, [user])
+    if (!user) {
+      setView('home')
+      return
+    }
+    if (isAdminUser && (view === 'upload' || view === 'pdb' || view === 'dumps')) {
+      setView('home')
+    }
+  }, [user, isAdminUser, view])
 
   function logout() {
     sessionStorage.removeItem('di_username')
@@ -69,9 +75,9 @@ export default function App() {
 
   const navItems = [
     { key: 'home', label: 'Overview', visible: true, disabled: false },
-    { key: 'upload', label: 'Upload', visible: Boolean(user), disabled: false },
-    { key: 'pdb', label: 'Upload PDB', visible: Boolean(user), disabled: false },
-    { key: 'dumps', label: 'Dumps', visible: true, disabled: false },
+    { key: 'upload', label: 'Upload', visible: Boolean(user) && !isAdminUser, disabled: false },
+    { key: 'pdb', label: 'Upload PDB', visible: Boolean(user) && !isAdminUser, disabled: false },
+    { key: 'dumps', label: 'Dumps', visible: !isAdminUser, disabled: false },
     { key: 'change', label: 'Change Password', visible: Boolean(user), disabled: false },
     { key: 'admin', label: 'Admin Panel', visible: isAdminUser, disabled: false }
   ]
@@ -114,9 +120,9 @@ export default function App() {
       <main className="content">
         {message && <div className="toast in-content">{message}</div>}
         {view === 'home' && <Home isAdmin={isAdminUser} />}
-        {view === 'upload' && user && <Upload username={user} setMessage={setMessage} />}
-        {view === 'pdb' && user && <PdbUpload username={user} setMessage={setMessage} />}
-        {view === 'dumps' && <Dumps />}
+        {view === 'upload' && user && !isAdminUser && <Upload username={user} setMessage={setMessage} />}
+        {view === 'pdb' && user && !isAdminUser && <PdbUpload username={user} setMessage={setMessage} />}
+        {view === 'dumps' && !isAdminUser && <Dumps />}
         {view === 'change' && user && <ChangePassword username={user} setMessage={setMessage} />}
         {isAdminUser && view === 'admin' && <AdminPanel setMessage={setMessage} />}
       </main>

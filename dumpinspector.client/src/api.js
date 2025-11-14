@@ -95,7 +95,3 @@ export async function uploadPdb(file, { productName, version, comment, uploadedB
     body: fd
   })
 }
-
-export async function adminUploadPdb(file, options = {}) {
-  return uploadPdb(file, options)
-}
