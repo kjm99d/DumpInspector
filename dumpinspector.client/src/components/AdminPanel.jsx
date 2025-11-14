@@ -50,8 +50,13 @@ export default function AdminPanel({ setMessage }) {
       return
     }
     try {
-      await adminCreateUser(username, email)
-      setMessage('사용자 생성 완료 (임시 비밀번호를 이메일로 전송했습니다)')
+      const res = await adminCreateUser(username, email)
+      if (res?.temporaryPassword) {
+        setTempPassword({ username, password: res.temporaryPassword })
+        setMessage(`SMTP 미사용: ${username} 계정의 임시 비밀번호는 ${res.temporaryPassword} 입니다.`)
+      } else {
+        setMessage('사용자 생성 완료 (임시 비밀번호를 이메일로 전송했습니다)')
+      }
       setUsername('')
       setEmail('')
       await refreshUsers()

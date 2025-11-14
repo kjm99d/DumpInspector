@@ -23,6 +23,7 @@ namespace DumpInspector.Server.Models
         public int AnalysisTimeoutSeconds { get; set; } = 120;
         public string? AdminSecret { get; set; }
         public string? InitialAdminPassword { get; set; }
+        public string? NonSmtpDefaultUserPassword { get; set; }
     }
 
     public class SmtpSettings

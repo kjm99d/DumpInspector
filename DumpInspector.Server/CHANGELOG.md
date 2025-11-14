@@ -8,6 +8,7 @@
 - New CrashDumpSettings knobs (`SymStorePath`, `SymbolStoreRoot`, `SymbolStoreProduct`) exposed through the options editor so administrators can manage symbol ingestion end-to-end.
 - Public `POST /api/pdb/upload` endpoint plus a dedicated “Upload PDB” workspace tab so regular users can register symbols without entering the admin panel.
 - Configurable dump upload size limit (`CrashDumpSettings.DumpUploadMaxBytes`) surfaced in the admin options UI; uploads are rejected with HTTP 413 if they exceed the limit.
+- Optional fallback password (`CrashDumpSettings.NonSmtpDefaultUserPassword`) that is applied when SMTP is disabled; the admin API now returns the password in its response so it can be shown in the UI.
 
 ### Changed
 - Administrator accounts can no longer access dump/PDB upload or analysis screens; their workspace is limited to password changes and the admin panel, while standard users retain upload capabilities.

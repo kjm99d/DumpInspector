@@ -22,6 +22,7 @@ export default function OptionsEditor({ loadOptions, saveOptions, setMessage, em
   const [symbolStoreProduct, setSymbolStoreProduct] = useState('DumpInspector')
   const [dumpUploadLimitMb, setDumpUploadLimitMb] = useState('10240')
   const [analysisTimeout, setAnalysisTimeout] = useState('120')
+  const [nonSmtpPassword, setNonSmtpPassword] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -65,6 +66,7 @@ export default function OptionsEditor({ loadOptions, saveOptions, setMessage, em
           const limitBytes = Number(opt.DumpUploadMaxBytes ?? opt.dumpUploadMaxBytes ?? (10 * 1024 * 1024 * 1024))
           const limitMb = limitBytes > 0 ? Math.round(limitBytes / (1024 * 1024)) : 10240
           setDumpUploadLimitMb(String(limitMb))
+          setNonSmtpPassword(opt.NonSmtpDefaultUserPassword ?? opt.nonSmtpDefaultUserPassword ?? '')
           setAnalysisTimeout(String(parseInt(opt.AnalysisTimeoutSeconds ?? opt.analysisTimeoutSeconds ?? 120, 10) || 120))
         }
         setLoaded(true)
@@ -107,6 +109,7 @@ export default function OptionsEditor({ loadOptions, saveOptions, setMessage, em
         SymbolStoreRoot: symbolStoreRoot,
         SymbolStoreProduct: symbolStoreProduct,
         DumpUploadMaxBytes: Math.max(1, Number(dumpUploadLimitMb) || 0) * 1024 * 1024,
+        NonSmtpDefaultUserPassword: nonSmtpPassword || null,
         AnalysisTimeoutSeconds: Number(analysisTimeout) || 120
       }
       await saveOptions(obj)
@@ -202,6 +205,14 @@ export default function OptionsEditor({ loadOptions, saveOptions, setMessage, em
         min="1"
         value={dumpUploadLimitMb}
         onChange={e => setDumpUploadLimitMb(e.target.value)}
+      />
+
+      <label>Default Password (when SMTP disabled)</label>
+      <input
+        type="text"
+        value={nonSmtpPassword}
+        onChange={e => setNonSmtpPassword(e.target.value)}
+        placeholder="SMTP 비활성 시 새 사용자에게 사용할 비밀번호"
       />
 
       <label>Analysis Timeout (seconds)</label>

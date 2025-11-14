@@ -88,6 +88,7 @@ DumpInspector는 윈도우 크래시 덤프(.dmp)를 업로드하면 서버에�
 | Symbol Store Root | SymStore 저장 루트 (예: `C:\symbols`) |
 | Symbol Store Product | SymStore `/t` 옵션에 사용할 제품명 |
 | Dump Upload Limit (MB) | 하나의 덤프 파일이 업로드될 수 있는 최대 용량 (기본 10,240MB ≒ 10GB) |
+| Default Password (No SMTP) | SMTP를 끈 상태에서 새 사용자에게 자동 부여될 기본 비밀번호 |
 | Analysis Timeout | 분석 최대 시간(초) |
 | NAS 설정 | PDB를 NAS에서 제공할 경우 사용 |
 
@@ -110,7 +111,7 @@ DumpInspector는 윈도우 크래시 덤프(.dmp)를 업로드하면 서버에�
 
 3. **사용자 관리**
    - 관리자 패널 → 사용자 생성: 아이디 & 이메일 입력 → 생성
-   - 임시 비밀번호가 이메일로 전송됨 (SMTP 정상 구성 필요)
+   - SMTP가 켜져 있으면 임시 비밀번호가 이메일로 전송되고, 비활성화된 경우에는 옵션에 지정한 “기본 비밀번호”가 바로 표시됩니다.
    - 사용자 삭제/임시 비밀번호 재발급 가능 (관리자 계정은 삭제 불가)
 
 4. **SMTP 구성 예시 (네이버)**

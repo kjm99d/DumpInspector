@@ -4,6 +4,7 @@ using DumpInspector.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,6 +22,7 @@ namespace DumpInspector.Server.Controllers
         private readonly IUserRepository _users;
         private readonly AppDbContext _db;
         private readonly IEmailSender _emailSender;
+        private readonly ICrashDumpSettingsProvider _settingsProvider;
         private readonly ILogger<AdminController> _logger;
 
         public AdminController(
@@ -28,12 +30,14 @@ namespace DumpInspector.Server.Controllers
             IUserRepository users,
             AppDbContext db,
             IEmailSender emailSender,
+            ICrashDumpSettingsProvider settingsProvider,
             ILogger<AdminController> logger)
         {
             _auth = auth;
             _users = users;
             _db = db;
             _emailSender = emailSender;
+            _settingsProvider = settingsProvider;
             _logger = logger;
         }
 
@@ -54,24 +58,41 @@ namespace DumpInspector.Server.Controllers
                 var makeAdmin = false;
                 var email = req.Email.Trim();
                 var username = req.Username.Trim();
-                var tempPassword = GenerateTemporaryPassword();
+                var settings = await _settingsProvider.GetAsync(HttpContext.RequestAborted);
+                var smtpEnabled = settings.Smtp?.Enabled == true &&
+                    !string.IsNullOrWhiteSpace(settings.Smtp.Host) &&
+                    !string.IsNullOrWhiteSpace(settings.Smtp.FromAddress);
+                var tempPassword = smtpEnabled
+                    ? GenerateTemporaryPassword()
+                    : (settings.NonSmtpDefaultUserPassword ?? "Temp1234!");
+
+                if (string.IsNullOrWhiteSpace(tempPassword))
+                {
+                    tempPassword = GenerateTemporaryPassword();
+                }
+
                 await _auth.CreateUserAsync(username, tempPassword, makeAdmin, email);
 
-                try
+                if (smtpEnabled)
                 {
-                    var subject = "[DumpInspector] 임시 비밀번호 안내";
-                    var body = $"안녕하세요,\n\nDumpInspector 계정이 생성되었습니다.\n\n아이디: {username}\n임시 비밀번호: {tempPassword}\n\n로그인 후 비밀번호를 즉시 변경해 주세요.\n\n감사합니다.";
-                    await _emailSender.SendAsync(email, subject, body);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to send welcome email to {Email}", email);
-                    await _auth.DeleteUserAsync(username);
-                    var reason = ex.InnerException?.Message ?? ex.Message;
-                    return StatusCode(StatusCodes.Status500InternalServerError, $"사용자는 생성되었으나 이메일 발송에 실패했습니다. SMTP 설정을 확인하세요. (사유: {reason})");
+                    try
+                    {
+                        var subject = "[DumpInspector] 임시 비밀번호 안내";
+                        var body = $"안녕하세요,\n\nDumpInspector 계정이 생성되었습니다.\n\n아이디: {username}\n임시 비밀번호: {tempPassword}\n\n로그인 후 비밀번호를 즉시 변경해 주세요.\n\n감사합니다.";
+                        await _emailSender.SendAsync(email, subject, body);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to send welcome email to {Email}", email);
+                        await _auth.DeleteUserAsync(username);
+                        var reason = ex.InnerException?.Message ?? ex.Message;
+                        return StatusCode(StatusCodes.Status500InternalServerError, $"사용자는 생성되었으나 이메일 발송에 실패했습니다. SMTP 설정을 확인하세요. (사유: {reason})");
+                    }
+
+                    return Ok(new { success = true });
                 }
 
-                return Ok(new { success = true });
+                return Ok(new { success = true, temporaryPassword = tempPassword });
             }
             catch (InvalidOperationException ex)
             {
