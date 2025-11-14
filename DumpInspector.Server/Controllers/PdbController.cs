@@ -51,7 +51,9 @@ namespace DumpInspector.Server.Controllers
             var ver = string.IsNullOrWhiteSpace(version) ? null : version!.Trim();
             var commentValue = BuildComment(comment, uploadedBy);
 
-            var tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}_{Path.GetFileName(file.FileName)}");
+            var tempFolder = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempFolder);
+            var tempPath = Path.Combine(tempFolder, Path.GetFileName(file.FileName));
             await using (var fs = System.IO.File.Create(tempPath))
             {
                 await file.CopyToAsync(fs);
@@ -89,7 +91,12 @@ namespace DumpInspector.Server.Controllers
             }
             finally
             {
-                try { System.IO.File.Delete(tempPath); } catch { /* ignore */ }
+                try
+                {
+                    if (System.IO.File.Exists(tempPath)) System.IO.File.Delete(tempPath);
+                    if (Directory.Exists(tempFolder)) Directory.Delete(tempFolder, true);
+                }
+                catch { /* ignore */ }
             }
         }
 
