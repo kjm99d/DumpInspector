@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using DumpInspector.Server.Models;
 using DumpInspector.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -9,6 +10,9 @@ using Microsoft.Extensions.Options;
 
 namespace DumpInspector.Server.Controllers
 {
+    /// <summary>
+    /// 심볼(PDB) 파일 업로드 및 심스토어 등록 엔드포인트.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class PdbController : ControllerBase
@@ -27,14 +31,18 @@ namespace DumpInspector.Server.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// PDB 파일을 업로드하고 SymStore에 등록한다.
+        /// </summary>
         [HttpPost("upload")]
-        public async Task<IActionResult> Upload(
-            IFormFile file,
-            [FromForm] string? productName,
-            [FromForm] string? version,
-            [FromForm] string? comment,
-            [FromForm] string? uploadedBy)
+        [Consumes("multipart/form-data")]
+        [ProducesResponseType(typeof(PdbUploadResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status499ClientClosedRequest)]
+        public async Task<IActionResult> Upload([FromForm] PdbUploadRequest request)
         {
+            var file = request.File;
             if (file == null || file.Length == 0)
             {
                 return BadRequest("PDB 파일을 선택하세요.");
@@ -45,11 +53,11 @@ namespace DumpInspector.Server.Controllers
                 return BadRequest("확장자가 .pdb인 파일만 업로드할 수 있습니다.");
             }
 
-            var product = string.IsNullOrWhiteSpace(productName)
+            var product = string.IsNullOrWhiteSpace(request.ProductName)
                 ? _options.Value.SymbolStoreProduct
-                : productName!.Trim();
-            var ver = string.IsNullOrWhiteSpace(version) ? null : version!.Trim();
-            var commentValue = BuildComment(comment, uploadedBy);
+                : request.ProductName!.Trim();
+            var ver = string.IsNullOrWhiteSpace(request.Version) ? null : request.Version!.Trim();
+            var commentValue = BuildComment(request.Comment, request.UploadedBy);
 
             var tempFolder = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempFolder);
@@ -69,16 +77,9 @@ namespace DumpInspector.Server.Controllers
                     commentValue,
                     HttpContext.RequestAborted);
 
-                return Ok(new
-                {
-                    message = "PDB 업로드 및 심볼 스토어 등록이 완료되었습니다.",
-                    result.SymbolStoreRoot,
-                    result.Product,
-                    result.Version,
-                    result.OriginalFileName,
-                    result.SymStoreCommand,
-                    result.SymStoreOutput
-                });
+                return Ok(new PdbUploadResponse(
+                    "PDB 업로드 및 심볼 스토어 등록이 완료되었습니다.",
+                    result));
             }
             catch (OperationCanceledException)
             {

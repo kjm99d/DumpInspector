@@ -6,6 +6,9 @@ using DumpInspector.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Text.Json;
 using System.Threading;
@@ -13,6 +16,9 @@ using System.Threading.Tasks;
 
 namespace DumpInspector.Server.Controllers
 {
+    /// <summary>
+    /// 덤프 파일 업로드와 분석 요청을 처리한다.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class DumpController : ControllerBase
@@ -38,7 +44,16 @@ namespace DumpInspector.Server.Controllers
             _settingsProvider = settingsProvider;
         }
 
+        /// <summary>
+        /// 덤프 파일을 업로드하고 백그라운드 분석 세션을 시작한다.
+        /// </summary>
+        /// <param name="file">업로드할 덤프 파일.</param>
+        /// <param name="uploadedBy">요청자 메모(선택).</param>
         [HttpPost("upload")]
+        [Consumes("multipart/form-data")]
+        [ProducesResponseType(typeof(DumpUploadAcceptedResponse), StatusCodes.Status202Accepted)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status413PayloadTooLarge)]
         public async Task<IActionResult> Upload(IFormFile file, [FromForm] string? uploadedBy)
         {
             if (file == null || file.Length == 0) return BadRequest("no file");
@@ -101,14 +116,19 @@ namespace DumpInspector.Server.Controllers
                 }
             });
 
-            return Accepted(new { sessionId = session.Id, fileName = fi.Name, sizeBytes = fi.Length });
+            return Accepted(new DumpUploadAcceptedResponse(session.Id, fi.Name, fi.Length));
         }
 
+        /// <summary>
+        /// 저장된 덤프 파일 목록을 반환한다.
+        /// </summary>
         [HttpGet("list")]
+        [ProducesResponseType(typeof(IEnumerable<DumpFileEntry>), StatusCodes.Status200OK)]
         public IActionResult List()
         {
             var folder = _storage.GetDumpFolder();
-            var files = Directory.GetFiles(folder).Select(p => new { Name = Path.GetFileName(p), Size = new FileInfo(p).Length });
+            var files = Directory.GetFiles(folder)
+                .Select(p => new DumpFileEntry(Path.GetFileName(p), new FileInfo(p).Length));
             return Ok(files);
         }
 

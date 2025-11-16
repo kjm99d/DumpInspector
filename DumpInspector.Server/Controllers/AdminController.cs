@@ -14,6 +14,9 @@ using System.Threading.Tasks;
 
 namespace DumpInspector.Server.Controllers
 {
+    /// <summary>
+    /// 관리자 기능(사용자, 업로드 기록, SMTP 등)을 제공한다.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class AdminController : ControllerBase
@@ -41,7 +44,15 @@ namespace DumpInspector.Server.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// 새 사용자 계정을 생성한다.
+        /// </summary>
         [HttpPost("create-user")]
+        [Consumes("application/json")]
+        [ProducesResponseType(typeof(CreateUserResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest req)
         {
             if (string.IsNullOrWhiteSpace(req.Username))
@@ -89,10 +100,10 @@ namespace DumpInspector.Server.Controllers
                         return StatusCode(StatusCodes.Status500InternalServerError, $"사용자는 생성되었으나 이메일 발송에 실패했습니다. SMTP 설정을 확인하세요. (사유: {reason})");
                     }
 
-                    return Ok(new { success = true });
+                    return Ok(new CreateUserResponse(true, null));
                 }
 
-                return Ok(new { success = true, temporaryPassword = tempPassword });
+                return Ok(new CreateUserResponse(true, tempPassword));
             }
             catch (InvalidOperationException ex)
             {
@@ -100,7 +111,11 @@ namespace DumpInspector.Server.Controllers
             }
         }
 
+        /// <summary>
+        /// 모든 사용자 목록을 조회한다.
+        /// </summary>
         [HttpGet("users")]
+        [ProducesResponseType(typeof(IEnumerable<UserSummary>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetUsers()
         {
             var list = await _users.GetAllAsync();
@@ -108,7 +123,13 @@ namespace DumpInspector.Server.Controllers
             return Ok(sanitized);
         }
 
+        /// <summary>
+        /// 지정한 사용자를 삭제한다.
+        /// </summary>
         [HttpDelete("users/{username}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteUser(string username)
         {
             if (string.IsNullOrWhiteSpace(username)) return BadRequest("Username required");
@@ -120,7 +141,14 @@ namespace DumpInspector.Server.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// 사용자의 비밀번호를 강제로 재설정한다.
+        /// </summary>
         [HttpPost("force-reset")]
+        [Consumes("application/json")]
+        [ProducesResponseType(typeof(ForceResetResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> ForceReset([FromBody] ForceResetRequest req)
         {
             if (string.IsNullOrWhiteSpace(req.Username))
@@ -131,7 +159,7 @@ namespace DumpInspector.Server.Controllers
             try
             {
                 await _auth.ResetPasswordAsync(req.Username, tempPassword);
-                return Ok(new { temporaryPassword = tempPassword });
+                return Ok(new ForceResetResponse(tempPassword));
             }
             catch (KeyNotFoundException)
             {
@@ -139,7 +167,11 @@ namespace DumpInspector.Server.Controllers
             }
         }
 
+        /// <summary>
+        /// 덤프 업로드/분석 로그를 최신 순으로 조회한다.
+        /// </summary>
         [HttpGet("logs")]
+        [ProducesResponseType(typeof(IEnumerable<UploadLogDto>), StatusCodes.Status200OK)]
         public IActionResult GetUploadLogs([FromQuery] int take = 100)
         {
             var logs = _db.UploadLogs
@@ -158,6 +190,9 @@ namespace DumpInspector.Server.Controllers
             return Ok(logs);
         }
 
+        /// <summary>
+        /// 영문/숫자/기호를 섞어 임시 비밀번호를 생성한다.
+        /// </summary>
         private static string GenerateTemporaryPassword(int length = 12)
         {
             const string allowed = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@$%^&*";
@@ -172,8 +207,13 @@ namespace DumpInspector.Server.Controllers
         }
     }
 
-    public record CreateUserRequest(string Username, string Email);
-    public record ForceResetRequest(string Username);
+    /// <summary>
+    /// 사용자 요약 정보.
+    /// </summary>
     public record UserSummary(string Username, bool IsAdmin, string? Email);
+
+    /// <summary>
+    /// 업로드 로그 DTO.
+    /// </summary>
     public record UploadLogDto(int Id, string? Username, string FileName, long FileSize, string? IpAddress, DateTime UploadedAt, string Summary, string AnalysisJson);
 }

@@ -3,11 +3,15 @@ using DumpInspector.Server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
+using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace DumpInspector.Server.Controllers
 {
+    /// <summary>
+    /// 애플리케이션 옵션(CrashDumpSettings)을 노출하고 갱신한다.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class OptionsController : ControllerBase
@@ -21,7 +25,11 @@ namespace DumpInspector.Server.Controllers
             _db = db;
         }
 
+        /// <summary>
+        /// CrashDumpSettings 구성을 가져온다.
+        /// </summary>
         [HttpGet("CrashDumpSettings")]
+        [ProducesResponseType(typeof(CrashDumpSettings), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetCrashDumpSettings()
         {
             var key = "CrashDumpSettings";
@@ -68,8 +76,14 @@ namespace DumpInspector.Server.Controllers
             return Ok(fallback);
         }
 
-    [HttpPut("CrashDumpSettings")]
-    public async Task<IActionResult> PutCrashDumpSettings([FromBody] DumpInspector.Server.Models.CrashDumpSettings model)
+        /// <summary>
+        /// CrashDumpSettings 구성을 저장한다.
+        /// </summary>
+        [HttpPut("CrashDumpSettings")]
+        [Consumes("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> PutCrashDumpSettings([FromBody] DumpInspector.Server.Models.CrashDumpSettings model)
         {
             // Very small persistence: update appsettings.json in the project folder and also store in Options table
             var file = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
