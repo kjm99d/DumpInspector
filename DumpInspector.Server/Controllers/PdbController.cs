@@ -29,7 +29,7 @@ namespace DumpInspector.Server.Controllers
 
         [HttpPost("upload")]
         public async Task<IActionResult> Upload(
-            [FromForm] IFormFile file,
+            IFormFile file,
             [FromForm] string? productName,
             [FromForm] string? version,
             [FromForm] string? comment,

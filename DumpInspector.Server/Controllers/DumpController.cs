@@ -39,7 +39,7 @@ namespace DumpInspector.Server.Controllers
         }
 
         [HttpPost("upload")]
-        public async Task<IActionResult> Upload([FromForm] IFormFile file, [FromForm] string? uploadedBy)
+        public async Task<IActionResult> Upload(IFormFile file, [FromForm] string? uploadedBy)
         {
             if (file == null || file.Length == 0) return BadRequest("no file");
 

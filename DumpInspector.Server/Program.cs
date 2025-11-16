@@ -62,7 +62,10 @@ app.UseStaticFiles();
 app.UseWebSockets();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+var enableSwagger = builder.Configuration.GetValue<bool?>("Swagger:Enabled")
+                      ?? app.Environment.IsDevelopment();
+
+if (enableSwagger)
 {
     app.UseSwagger();
     app.UseSwaggerUI();
@@ -94,7 +97,7 @@ app.Map("/ws/analysis", async (HttpContext context, DumpInspector.Server.Service
 
     using var socket = await context.WebSockets.AcceptWebSocketAsync();
     await manager.StreamSessionAsync(session, socket, context.RequestAborted);
-});
+}).ExcludeFromDescription();
 
 app.MapFallbackToFile("/index.html");
 // Ensure DB created and initial admin user exists
