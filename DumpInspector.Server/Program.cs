@@ -34,7 +34,6 @@ builder.Services.AddDbContext<DumpInspector.Server.Data.AppDbContext>(opt =>
 
 builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IUserRepository, DumpInspector.Server.Services.Implementations.EfUserRepository>();
 builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IAuthService, DumpInspector.Server.Services.Implementations.AuthService>();
-builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IAdminService, DumpInspector.Server.Services.Implementations.AdminService>();
 builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IDumpStorageService, DumpInspector.Server.Services.Implementations.DumpStorageService>();
 builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IEmailSender, DumpInspector.Server.Services.Implementations.SmtpEmailSender>();
 builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.ICrashDumpSettingsProvider, DumpInspector.Server.Services.Implementations.DbCrashDumpSettingsProvider>();
