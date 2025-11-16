@@ -1,28 +1,28 @@
 using DumpInspector.Server.Models;
 using DumpInspector.Server.Services.Interfaces;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace DumpInspector.Server.Services.Implementations
 {
     public class CdbAnalysisService : IAnalysisService
     {
         private readonly IPdbProvider _pdbProvider;
-        private readonly CrashDumpSettings _settings;
+        private readonly ICrashDumpSettingsProvider _settingsProvider;
         private readonly ILogger<CdbAnalysisService> _logger;
 
         public CdbAnalysisService(IPdbProvider pdbProvider,
-            IOptions<CrashDumpSettings> options,
+            ICrashDumpSettingsProvider settingsProvider,
             ILogger<CdbAnalysisService> logger)
         {
             _pdbProvider = pdbProvider;
-            _settings = options.Value;
+            _settingsProvider = settingsProvider;
             _logger = logger;
         }
 
@@ -35,9 +35,10 @@ namespace DumpInspector.Server.Services.Implementations
 
             try
             {
-                var cdbPath = ResolveCdbPath();
-                var symbolPath = BuildSymbolPath();
-                var timeout = Math.Max(10, _settings.AnalysisTimeoutSeconds);
+                var settings = await _settingsProvider.GetAsync(cancellationToken);
+                var cdbPath = ResolveCdbPath(settings);
+                var symbolPath = BuildSymbolPath(settings);
+                var timeout = Math.Max(10, settings.AnalysisTimeoutSeconds);
                 using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeout));
                 var token = timeoutCts.Token;
@@ -165,12 +166,12 @@ namespace DumpInspector.Server.Services.Implementations
             return builder.ToString();
         }
 
-        private string? BuildSymbolPath()
+        private string? BuildSymbolPath(CrashDumpSettings settings)
         {
             var paths = new List<string>();
-            if (!string.IsNullOrWhiteSpace(_settings.SymbolPath))
+            if (!string.IsNullOrWhiteSpace(settings.SymbolPath))
             {
-                paths.Add(_settings.SymbolPath.Trim());
+                paths.Add(settings.SymbolPath.Trim());
             }
 
             var env = Environment.GetEnvironmentVariable("_NT_SYMBOL_PATH");
@@ -182,11 +183,11 @@ namespace DumpInspector.Server.Services.Implementations
             return paths.Count == 0 ? null : string.Join(";", paths.Distinct());
         }
 
-        private string ResolveCdbPath()
+        private string ResolveCdbPath(CrashDumpSettings settings)
         {
-            if (!string.IsNullOrWhiteSpace(_settings.CdbPath) && IsExecutableAvailable(_settings.CdbPath))
+            if (!string.IsNullOrWhiteSpace(settings.CdbPath) && IsExecutableAvailable(settings.CdbPath))
             {
-                return _settings.CdbPath!;
+                return settings.CdbPath!;
             }
 
             foreach (var candidate in GetDefaultCdbCandidates())
@@ -194,7 +195,7 @@ namespace DumpInspector.Server.Services.Implementations
                 if (IsExecutableAvailable(candidate)) return candidate;
             }
 
-            return _settings.CdbPath ?? "cdb";
+            return settings.CdbPath ?? "cdb";
         }
 
         private IEnumerable<string> GetDefaultCdbCandidates()
