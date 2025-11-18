@@ -3,12 +3,17 @@ using System.IO;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using DumpInspector.Server.Services.Interfaces;
+using DumpInspector.Server.Services.Implementations;
+using DumpInspector.Server.Models;
+using Microsoft.Extensions.Options;
+using DumpInspector.Server.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // bind settings
-builder.Services.Configure<DumpInspector.Server.Models.CrashDumpSettings>(builder.Configuration.GetSection("CrashDumpSettings"));
+builder.Services.Configure<CrashDumpSettings>(builder.Configuration.GetSection("CrashDumpSettings"));
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -39,31 +44,31 @@ builder.Services.AddCors(options =>
 // register repositories and services
 // Configure EF Core with MariaDB (connection string in appsettings)
 var conn = builder.Configuration.GetConnectionString("DefaultConnection") ?? "server=localhost;port=3306;user=root;password=root;database=dumpinspector";
-builder.Services.AddDbContext<DumpInspector.Server.Data.AppDbContext>(opt =>
+builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseMySql(conn, new MySqlServerVersion(new Version(8, 0, 33))));
 
-builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IUserRepository, DumpInspector.Server.Services.Implementations.EfUserRepository>();
-builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IAuthService, DumpInspector.Server.Services.Implementations.AuthService>();
-builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IDumpStorageService, DumpInspector.Server.Services.Implementations.DumpStorageService>();
-builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IEmailSender, DumpInspector.Server.Services.Implementations.SmtpEmailSender>();
-builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.ICrashDumpSettingsProvider, DumpInspector.Server.Services.Implementations.DbCrashDumpSettingsProvider>();
-builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IPdbIngestionService, DumpInspector.Server.Services.Implementations.SymStorePdbIngestionService>();
+builder.Services.AddScoped<IUserRepository, EfUserRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IDumpStorageService, DumpStorageService>();
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+builder.Services.AddScoped<ICrashDumpSettingsProvider, DbCrashDumpSettingsProvider>();
+builder.Services.AddScoped<IPdbIngestionService, SymStorePdbIngestionService>();
 builder.Services.AddSingleton<DumpInspector.Server.Services.Analysis.AnalysisSessionManager>();
 // IPdbProvider will be resolved based on configuration at runtime
-builder.Services.AddHttpClient<DumpInspector.Server.Services.Implementations.NasPdbProvider>();
-builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IPdbProvider>(sp =>
+builder.Services.AddHttpClient<NasPdbProvider>();
+builder.Services.AddScoped<IPdbProvider>(sp =>
 {
-    var cfg = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<DumpInspector.Server.Models.CrashDumpSettings>>().Value;
+    var cfg = sp.GetRequiredService<IOptions<CrashDumpSettings>>().Value;
     if (cfg.UseNasForPdb)
     {
-        return sp.GetRequiredService<DumpInspector.Server.Services.Implementations.NasPdbProvider>();
+        return sp.GetRequiredService<NasPdbProvider>();
     }
     else
     {
-        return new DumpInspector.Server.Services.Implementations.LocalPdbProvider(sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<DumpInspector.Server.Models.CrashDumpSettings>>());
+        return new LocalPdbProvider(sp.GetRequiredService<IOptions<CrashDumpSettings>>());
     }
 });
-builder.Services.AddScoped<DumpInspector.Server.Services.Interfaces.IAnalysisService, DumpInspector.Server.Services.Implementations.CdbAnalysisService>();
+builder.Services.AddScoped<IAnalysisService, CdbAnalysisService>();
 
 var app = builder.Build();
 
@@ -113,11 +118,11 @@ app.MapFallbackToFile("/index.html");
 // Ensure DB created and initial admin user exists
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<DumpInspector.Server.Data.AppDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.EnsureCreatedAsync();
-    var repo = scope.ServiceProvider.GetRequiredService<DumpInspector.Server.Services.Interfaces.IUserRepository>();
-    var auth = scope.ServiceProvider.GetRequiredService<DumpInspector.Server.Services.Interfaces.IAuthService>();
-    var cfg = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<DumpInspector.Server.Models.CrashDumpSettings>>().Value;
+    var repo = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+    var auth = scope.ServiceProvider.GetRequiredService<IAuthService>();
+    var cfg = scope.ServiceProvider.GetRequiredService<IOptions<CrashDumpSettings>>().Value;
     var adminName = "admin";
     var existing = await repo.GetByUsernameAsync(adminName);
         if (existing == null)
