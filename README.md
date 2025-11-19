@@ -186,6 +186,40 @@ dumpinspector.client/
 
 ---
 
+## SymbolAutoUpload 도구
+
+`SymbolAutoUpload/`는 로컬 빌드 결과물(.pdb)을 지정한 DumpInspector 서버에 한꺼번에 업로드하는 .NET 8 콘솔 앱입니다. 실행 순서는 다음과 같습니다.
+
+1. `appsettings.json` 또는 환경 변수(`SYMBOLUPLOAD_` prefix)로 서버 URL·계정·검색 경로 등을 지정합니다.
+2. 실행 시 `api/auth/validate`로 아이디/비밀번호를 검증하고 Basic 인증 헤더를 구성합니다.
+3. 프로그램 실행 파일이 있는 경로(또는 `PdbDirectory`)에서 `.pdb`를 재귀적으로 찾고, 각 파일을 `api/pdb/upload`로 전송합니다.
+
+### 설정 방법
+
+`SymbolAutoUpload/appsettings.json`에는 다음 필드가 있습니다.
+
+| 키 | 설명 |
+| --- | --- |
+| `ApiBaseUrl` | DumpInspector.Server 주소 (예: `https://dump.example.com/`) |
+| `Username` / `Password` | 기본 로그인 자격 증명. 비워두면 콘솔에서 입력을 요구합니다. 저장 시에는 개인 PC 등 안전한 위치에서만 사용하세요. |
+| `ProductName`, `Version`, `Comment` | 업로드 시 기본으로 들어갈 SymStore 메타데이터. 빈 문자열이면 서버 기본값이 사용됩니다. |
+| `IncludeSubdirectories` | `true`면 하위 디렉터리까지 모두 검색합니다. |
+| `PdbDirectory` | 검색 루트. 비우면 실행 파일 폴더(`SymbolAutoUpload.exe`가 있는 위치)를 사용합니다. |
+| `UploadedByOverride` | 서버 `UploadedBy` 필드를 고정값으로 덮어쓰고 싶을 때 사용합니다. |
+| `HttpTimeoutSeconds` | HTTP 타임아웃(초). 느린 네트워크에서 늘릴 수 있습니다. |
+
+환경 변수로 덮어쓸 때는 `SYMBOLUPLOAD_USERNAME=buildbot`처럼 대문자 스네이크 케이스를 사용하면 됩니다.
+
+### 실행/배포
+
+- 개발 중에는 `dotnet run --project SymbolAutoUpload`로 바로 실행할 수 있습니다.
+- 배포용 바イ너리는 `dotnet publish SymbolAutoUpload -c Release -r win-x64 --self-contained false` 등으로 만든 뒤, `appsettings.json`을 같은 폴더에 두고 `SymbolAutoUpload.exe`를 실행하면 됩니다.
+- 실행 후 Ctrl+C로 언제든지 작업을 중단할 수 있으며, 오류 메시지는 콘솔에 상세히 출력됩니다.
+
+> ⚠️ `appsettings.json`에 자격 증명을 저장할 경우 권한이 제한된 계정으로 실행하거나 파일 권한을 관리해 주세요.
+
+---
+
 ## 라이선스
 
 프로젝트에 특정 라이선스가 정의되어 있지 않습니다. 필요 시 리포지토리에 LICENSE 파일을 추가하세요.
